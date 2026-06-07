@@ -132,7 +132,7 @@ export default function NewMeasurementWizard() {
           customerId, productType, unit, length, width, height, seatWidth, seatHeight, seatDepth, backrestHeight, cushionThickness, armrestWidth, handleType, legHeight, legType, colorCode, catalog,
           reclinerType: isMotorized ? "Motorized" : "Manual", numberOfReclinerSeats: reclinerSeats, isMotorized, headboardHeight, hasStorage,
           sideDimensions: { chaisePlacement, leftSideLength, leftSideType, rightSideLength, rightSideType },
-          cushionType, hasAdjustableHeadrest, hasUSB, hasCupHolder, specialNotes: specialNotes || "None",
+          cushionType, hasAdjustableHeadrest, hasUsbCharging: hasUSB, hasCupHolder, specialNotes: specialNotes || "None",
           expectedDeliveryDate,
           previewImages, storeId: storeId || undefined
         })

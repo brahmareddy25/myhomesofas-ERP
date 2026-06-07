@@ -200,8 +200,17 @@ function QuotationsList() {
                             detailsCol2.push(`Cushion Type: ${m.cushionType || "Standard"}`);
                             if (isSofa) {
                                 detailsCol2.push(`Recliner: ${m.reclinerType || 'None'} (Seats: ${m.numberOfReclinerSeats || 0})`);
-                                detailsCol2.push(`Addons: ${(m.premiumAddons || []).join(", ") || 'None'}`);
-                                detailsCol2.push(`USB: ${m.hasUsbCharging?'Yes':'No'} | Cup Holder: ${m.hasCupHolder?'Yes':'No'}`);
+                                const addonsList = [...(m.premiumAddons || [])];
+                                if (m.hasAdjustableHeadrest) addonsList.push("Adjustable Headrest");
+                                if (m.hasCupHolder) addonsList.push("Console Cup Holders");
+                                if (m.hasUsbCharging) addonsList.push("USB Charging Ports");
+                                
+                                if (addonsList.length > 0) {
+                                  detailsCol2.push(`Premium Add-ons:`);
+                                  addonsList.forEach(addon => detailsCol2.push(` - ${addon}`));
+                                } else {
+                                  detailsCol2.push(`Premium Add-ons: None`);
+                                }
                             }
                           } else if (isBed) {
                             detailsCol1.push(`Bed Headboard: ${m.headboardHeight||0} ${m.unit||'cm'}`);

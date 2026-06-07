@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Save, Shield, Settings2, FileText, Database } from "lucide-react";
+import { Save, Shield, Settings2, FileText, Database, Search } from "lucide-react";
 import toast from 'react-hot-toast';
 
 export default function SettingsPage() {
@@ -13,6 +13,8 @@ export default function SettingsPage() {
   });
   const [isSavingTax, setIsSavingTax] = useState(false);
   const [isSavingTerms, setIsSavingTerms] = useState(false);
+  const [auditLogs, setAuditLogs] = useState<any[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     fetch('/api/settings')
@@ -20,6 +22,15 @@ export default function SettingsPage() {
       .then(data => {
         if (!data.error) {
           setSettings(data);
+        }
+      })
+      .catch(err => console.error(err));
+
+    fetch('/api/audit-logs')
+      .then(res => res.json())
+      .then(data => {
+        if (!data.error && data.logs) {
+          setAuditLogs(data.logs);
         }
       })
       .catch(err => console.error(err));
@@ -47,12 +58,13 @@ export default function SettingsPage() {
       else setIsSavingTerms(false);
     }
   };
-  const auditLogs = [
-    { id: "AUD-8921", user: "Admin", action: "Updated Global CGST Rate to 9%", date: "2023-11-03 14:22" },
-    { id: "AUD-8920", user: "Downtown Mgr", action: "Approved Expense EXP-102", date: "2023-11-03 10:15" },
-    { id: "AUD-8919", user: "Admin", action: "Added new Transporter TRN-003", date: "2023-11-02 18:45" },
-    { id: "AUD-8918", user: "Westside Mgr", action: "Generated Quotation QT-2023-003", date: "2023-11-02 11:30" },
-  ];
+  const filteredLogs = auditLogs.filter(log => {
+    const searchStr = searchQuery.toLowerCase();
+    const userStr = log.userId?.username?.toLowerCase() || '';
+    const actionStr = log.action?.toLowerCase() || '';
+    const detailsStr = log.details?.toLowerCase() || '';
+    return userStr.includes(searchStr) || actionStr.includes(searchStr) || detailsStr.includes(searchStr);
+  });
 
   return (
     <div className="flex flex-col gap-6 animate-fade-in" style={{ animation: 'fadeIn 0.6s ease' }}>
@@ -142,10 +154,25 @@ export default function SettingsPage() {
         {/* Right Column: Audit Logs */}
         <div className="card" style={{ display: 'flex', flexDirection: 'column', padding: 0, overflow: 'hidden' }}>
           <div style={{ padding: '1.5rem', borderBottom: '1px solid var(--color-border)', background: 'var(--color-bg-elevated)' }}>
-            <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '1.1rem', fontWeight: 600, color: 'var(--color-text-primary)' }}>
-              <Shield size={20} className="text-gold" /> System Audit Logs
-            </h4>
-            <p style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)', marginTop: '0.5rem' }}>Immutable record of all administrative actions.</p>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '1.1rem', fontWeight: 600, color: 'var(--color-text-primary)' }}>
+                  <Shield size={20} className="text-gold" /> System Audit Logs
+                </h4>
+                <p style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)', marginTop: '0.5rem' }}>Immutable record of all administrative actions.</p>
+              </div>
+              <div className="premium-input-group" style={{ margin: 0, minWidth: '220px' }}>
+                <Search size={16} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-secondary)' }} />
+                <input 
+                  type="text" 
+                  placeholder="Search logs..." 
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="premium-input"
+                  style={{ paddingLeft: '2.5rem', margin: 0 }}
+                />
+              </div>
+            </div>
           </div>
           
           <div style={{ overflowY: 'auto', flex: 1 }}>
@@ -158,17 +185,26 @@ export default function SettingsPage() {
                 </tr>
               </thead>
               <tbody>
-                {auditLogs.map((log) => (
-                  <tr key={log.id} style={{ borderBottom: '1px solid var(--color-border)', transition: 'background var(--transition-fast)' }} onMouseOver={e => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'} onMouseOut={e => e.currentTarget.style.background = 'transparent'}>
+                {filteredLogs.map((log) => (
+                  <tr key={log._id} style={{ borderBottom: '1px solid var(--color-border)', transition: 'background var(--transition-fast)' }} onMouseOver={e => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'} onMouseOut={e => e.currentTarget.style.background = 'transparent'}>
                     <td style={{ padding: '1.5rem', color: 'var(--color-text-secondary)', fontSize: '0.875rem' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <Database size={14} /> {log.date}
+                        <Database size={14} /> {new Date(log.createdAt).toLocaleString()}
                       </div>
                     </td>
-                    <td style={{ padding: '1.5rem', fontWeight: 600, color: log.user === 'Admin' ? 'var(--color-gold-primary)' : 'var(--color-text-primary)' }}>{log.user}</td>
-                    <td style={{ padding: '1.5rem', color: 'var(--color-text-primary)', fontSize: '0.875rem' }}>{log.action}</td>
+                    <td style={{ padding: '1.5rem', fontWeight: 600, color: log.userId?.role === 'Admin' ? 'var(--color-gold-primary)' : 'var(--color-text-primary)' }}>{log.userId?.username || 'System'}</td>
+                    <td style={{ padding: '1.5rem', color: 'var(--color-text-primary)', fontSize: '0.875rem' }}>
+                      {log.action} {log.details && <span style={{ color: 'var(--color-text-secondary)', display: 'block', fontSize: '0.75rem', marginTop: '0.25rem' }}>{log.details}</span>}
+                    </td>
                   </tr>
                 ))}
+                {filteredLogs.length === 0 && (
+                  <tr>
+                    <td colSpan={3} style={{ padding: '2rem', textAlign: 'center', color: 'var(--color-text-secondary)' }}>
+                      No audit logs found matching your criteria.
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
